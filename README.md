@@ -1,32 +1,38 @@
-# Open in Drago
+# Open in Drago — V2
 
-A tiny **unofficial** Android helper for public Diskwala share links.
+A tiny **unofficial** Android helper for Diskwala share links.
 
-## What it does
+## V2 workflow
 
-1. In Telegram, share a message/link containing `https://...diskwala.com/...`.
-2. Choose **Open in Drago** from Android's Share sheet.
-3. The app opens `https://dragoplayer.online/` in a WebView.
-4. It fills the Diskwala URL into the page and presses **Watch** automatically.
+After a one-time Android setting is enabled:
 
-The helper does not modify Diskwala, block its anti-adblock checks, resolve media URLs itself, or store your links.
+**Telegram → tap Diskwala link → Open in Drago → DragoXStream loads the link and presses Watch automatically.**
 
-## Build on an Android phone with AndroidIDE
+The V1 Share-sheet workflow is still kept:
 
-AndroidIDE can open existing Gradle Android projects and build/install a debug APK on-device.
+**Telegram → Share → Open in Drago**
 
-1. Install AndroidIDE from one of its trusted sources (official site, GitHub Releases, or F-Droid).
-2. In AndroidIDE's terminal, install its build tools if this is your first use (`idesetup -c`).
-3. Extract this ZIP to a normal folder on your phone.
-4. AndroidIDE → **Open existing project** → select the `OpenInDrago` folder.
-5. Let Gradle sync.
-6. Tap **Run / Quick Run** to build and install the debug APK.
-7. In Telegram, use **Share** on a message containing a Diskwala link and choose **Open in Drago**.
+## First-time setup on Android 12+
+
+1. Open **Open in Drago** once.
+2. Tap **Open link settings**.
+3. Turn on **Open supported links**.
+4. Enable/select `diskwala.com` and `www.diskwala.com` if Android shows them.
+5. Return to Telegram and tap a Diskwala `/app/...` link normally.
+
+Android 12+ requires either verified website ownership or explicit user approval before an unverified app can open normal HTTPS links. This helper opens the Android approval screen for you.
+
+## Build
+
+Push the project to GitHub. `.github/workflows/build-apk.yml` builds a debug APK automatically on `main`.
+
+The artifact is named `OpenInDrago-v2-debug-apk`.
 
 ## Notes
 
+- Version: 2.0 (`versionCode 2`).
 - Minimum Android version: Android 6 (API 23).
-- The app needs only the `INTERNET` permission.
-- It depends on the current HTML structure of DragoXStream. If Drago changes its input/button markup, the auto-fill selector may need updating.
-- DragoXStream is a third-party service. This helper is not affiliated with DragoXStream or Diskwala.
-- Only open files/links you are authorized to access.
+- Only the `INTERNET` permission is requested.
+- No VPN, DNS blocking, Accessibility Service, or Diskwala modification is used.
+- DragoXStream and Diskwala are third-party services. This project is not affiliated with either service.
+- Only open content you are authorized to access.

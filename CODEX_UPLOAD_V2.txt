@@ -1,0 +1,20 @@
+Use this sequence in the existing GitHub repository chsaqib/OpenInDrago.
+
+IMPORTANT: Preserve V1 before changing main.
+
+1. Fetch and checkout main.
+2. Create and push a backup branch from the current V1 commit:
+   git checkout main
+   git pull --ff-only
+   git branch v1-share-only
+   git push origin v1-share-only
+3. Replace the working tree project files with the contents of this OpenInDrago-v2 folder.
+4. Commit:
+   git add -A
+   git commit -m "Build V2 direct Diskwala link handling"
+5. Push main:
+   git push origin main
+6. Verify GitHub Actions workflow "Build Android APK" succeeds.
+7. Download artifact "OpenInDrago-v2-debug-apk" and install app-debug.apk on Android.
+
+Do not delete the v1-share-only branch.

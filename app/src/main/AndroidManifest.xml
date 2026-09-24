@@ -22,20 +22,33 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
-            <!-- Makes the helper appear in Android's Share sheet for shared text/URLs. -->
+            <!-- Keep the V1 Share-sheet workflow. -->
             <intent-filter>
                 <action android:name="android.intent.action.SEND" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <data android:mimeType="text/plain" />
             </intent-filter>
 
-            <!-- Optional: Android may offer this app when a Diskwala app link is opened. -->
-            <intent-filter>
+            <!-- V2: direct Diskwala link handling. On Android 12+, the user may
+                 need to approve these domains once in Open by default settings. -->
+            <intent-filter android:autoVerify="true">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="https" android:host="www.diskwala.com" android:pathPrefix="/app/" />
-                <data android:scheme="https" android:host="diskwala.com" android:pathPrefix="/app/" />
+                <data
+                    android:scheme="https"
+                    android:host="www.diskwala.com"
+                    android:pathPrefix="/app/" />
+            </intent-filter>
+
+            <intent-filter android:autoVerify="true">
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data
+                    android:scheme="https"
+                    android:host="diskwala.com"
+                    android:pathPrefix="/app/" />
             </intent-filter>
         </activity>
     </application>

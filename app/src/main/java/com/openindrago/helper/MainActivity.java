@@ -4,8 +4,12 @@ import android.app.Activity;
 import android.content.ActivityNotFoundException;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Color;
+import android.graphics.Typeface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.view.Gravity;
 import android.view.View;
 import android.view.ViewGroup;
@@ -16,8 +20,11 @@ import android.webkit.WebResourceRequest;
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
+import android.widget.Button;
 import android.widget.FrameLayout;
+import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.TextView;
 import android.widget.Toast;
 
 import org.json.JSONObject;
@@ -42,21 +49,133 @@ public class MainActivity extends Activity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        buildUi();
-        configureWebView();
-        handleIntent(getIntent());
-        webView.loadUrl(DRAGO_URL);
+        if (!openFromIntent(getIntent())) {
+            showSetupScreen();
+        }
     }
 
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
         setIntent(intent);
-        handleIntent(intent);
+        if (!openFromIntent(intent)) {
+            showSetupScreen();
+        }
+    }
+
+    private boolean openFromIntent(Intent intent) {
+        if (intent == null) return false;
+
+        String candidate = null;
+        String action = intent.getAction();
+
+        if (Intent.ACTION_SEND.equals(action)) {
+            CharSequence shared = intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
+            if (shared != null) candidate = extractUrl(shared.toString());
+        } else if (Intent.ACTION_VIEW.equals(action) && intent.getData() != null) {
+            candidate = intent.getData().toString();
+        }
+
+        if (candidate != null && isDiskwalaUrl(candidate)) {
+            showPlayer(candidate);
+            return true;
+        }
+
+        if (Intent.ACTION_SEND.equals(action) || Intent.ACTION_VIEW.equals(action)) {
+            Toast.makeText(this, "No Diskwala link found", Toast.LENGTH_LONG).show();
+        }
+        return false;
+    }
+
+    private void showSetupScreen() {
+        destroyWebView();
+
+        LinearLayout layout = new LinearLayout(this);
+        layout.setOrientation(LinearLayout.VERTICAL);
+        layout.setGravity(Gravity.CENTER_HORIZONTAL);
+        layout.setPadding(dp(24), dp(48), dp(24), dp(32));
+        layout.setBackgroundColor(0xFF111111);
+
+        TextView title = new TextView(this);
+        title.setText("Enable direct Diskwala links");
+        title.setTextColor(Color.WHITE);
+        title.setTextSize(22);
+        title.setTypeface(Typeface.DEFAULT, Typeface.BOLD);
+        title.setGravity(Gravity.CENTER);
+        layout.addView(title, new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        ));
+
+        TextView description = new TextView(this);
+        description.setText("To open a Diskwala link straight from Telegram, enable Open supported links and select diskwala.com / www.diskwala.com. You only need to do this once.\n\nThe Share method from V1 still works too.");
+        description.setTextColor(0xFFD0D0D0);
+        description.setTextSize(16);
+        description.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams descParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        descParams.topMargin = dp(20);
+        layout.addView(description, descParams);
+
+        Button settingsButton = new Button(this);
+        settingsButton.setText("Open link settings");
+        settingsButton.setOnClickListener(v -> openLinkSettings());
+        LinearLayout.LayoutParams buttonParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        buttonParams.topMargin = dp(28);
+        layout.addView(settingsButton, buttonParams);
+
+        TextView hint = new TextView(this);
+        hint.setText("After enabling the domains, return to Telegram and tap a Diskwala link normally.");
+        hint.setTextColor(0xFFAAAAAA);
+        hint.setTextSize(14);
+        hint.setGravity(Gravity.CENTER);
+        LinearLayout.LayoutParams hintParams = new LinearLayout.LayoutParams(
+                ViewGroup.LayoutParams.MATCH_PARENT,
+                ViewGroup.LayoutParams.WRAP_CONTENT
+        );
+        hintParams.topMargin = dp(18);
+        layout.addView(hint, hintParams);
+
+        setContentView(layout);
+    }
+
+    private void openLinkSettings() {
+        Intent settingsIntent;
+        Uri packageUri = Uri.parse("package:" + getPackageName());
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            settingsIntent = new Intent(Settings.ACTION_APP_OPEN_BY_DEFAULT_SETTINGS, packageUri);
+        } else {
+            settingsIntent = new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri);
+        }
+
+        try {
+            startActivity(settingsIntent);
+        } catch (ActivityNotFoundException e) {
+            try {
+                startActivity(new Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, packageUri));
+            } catch (ActivityNotFoundException ignored) {
+                Toast.makeText(this, "Open Android Settings > Apps > Open in Drago > Set as default", Toast.LENGTH_LONG).show();
+            }
+        }
+    }
+
+    private void showPlayer(String diskwalaUrl) {
+        pendingDiskwalaUrl = diskwalaUrl;
+
+        if (webView == null) {
+            buildPlayerUi();
+            configureWebView();
+        }
         webView.loadUrl(DRAGO_URL);
     }
 
-    private void buildUi() {
+    private void buildPlayerUi() {
         root = new FrameLayout(this);
         root.setBackgroundColor(0xFF000000);
 
@@ -167,25 +286,6 @@ public class MainActivity extends Activity {
         });
     }
 
-    private void handleIntent(Intent intent) {
-        pendingDiskwalaUrl = null;
-        if (intent == null) return;
-
-        String candidate = null;
-        if (Intent.ACTION_SEND.equals(intent.getAction())) {
-            CharSequence shared = intent.getCharSequenceExtra(Intent.EXTRA_TEXT);
-            if (shared != null) candidate = extractUrl(shared.toString());
-        } else if (Intent.ACTION_VIEW.equals(intent.getAction()) && intent.getData() != null) {
-            candidate = intent.getData().toString();
-        }
-
-        if (candidate != null && isDiskwalaUrl(candidate)) {
-            pendingDiskwalaUrl = candidate;
-        } else if (Intent.ACTION_SEND.equals(intent.getAction()) || Intent.ACTION_VIEW.equals(intent.getAction())) {
-            Toast.makeText(this, "No Diskwala link found in the shared text", Toast.LENGTH_LONG).show();
-        }
-    }
-
     private String extractUrl(String text) {
         Matcher matcher = HTTPS_URL.matcher(text);
         while (matcher.find()) {
@@ -219,7 +319,7 @@ public class MainActivity extends Activity {
         if (pendingDiskwalaUrl == null) return;
 
         final String url = pendingDiskwalaUrl;
-        pendingDiskwalaUrl = null; // Avoid submitting it again on every navigation.
+        pendingDiskwalaUrl = null;
         final String quoted = JSONObject.quote(url);
 
         String script =
@@ -270,21 +370,31 @@ public class MainActivity extends Activity {
 
     @Override
     public void onBackPressed() {
-        if (customView != null) {
+        if (customView != null && chromeClient != null) {
             chromeClient.onHideCustomView();
-        } else if (webView.canGoBack()) {
+        } else if (webView != null && webView.canGoBack()) {
             webView.goBack();
         } else {
             super.onBackPressed();
         }
     }
 
-    @Override
-    protected void onDestroy() {
+    private void destroyWebView() {
         if (webView != null) {
             webView.stopLoading();
             webView.destroy();
+            webView = null;
         }
+        root = null;
+        progress = null;
+        customView = null;
+        customViewCallback = null;
+        chromeClient = null;
+    }
+
+    @Override
+    protected void onDestroy() {
+        destroyWebView();
         super.onDestroy();
     }
 }
