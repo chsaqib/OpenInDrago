@@ -1,0 +1,5 @@
+Package: com.openindrago.helper
+Main screen: app/src/main/java/com/openindrago/helper/MainActivity.java
+Permissions: INTERNET only
+Accepted share targets: HTTPS Diskwala domains
+Third-party destination: https://dragoplayer.online/
